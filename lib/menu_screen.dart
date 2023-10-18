@@ -13,148 +13,62 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MenuScreen extends StatefulWidget {
-  @override
-  _MenuScreenState createState() => _MenuScreenState();
-}
-
-class _MenuScreenState extends State<MenuScreen> {
-  bool showSensors = false;
-  bool showControl = false;
-  bool showMonitor = false;
-
-  void toggleSensors() {
-    setState(() {
-      showSensors = !showSensors;
-      showControl = false;
-      showMonitor = false;
-    });
-  }
-
-  void toggleControl() {
-    setState(() {
-      showSensors = false;
-      showControl = !showControl;
-      showMonitor = false;
-    });
-  }
-
-  void toggleMonitor() {
-    setState(() {
-      showSensors = false;
-      showControl = false;
-      showMonitor = !showMonitor;
-    });
-  }
-
+class MenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // Latar belakang seluruh halaman
       body: Column(
         children: <Widget>[
           SizedBox(
-            width: 220,
-            height: 50,
+            width: 285, // Sesuaikan ukuran sesuai kebutuhan
+            height: 65, // Sesuaikan ukuran sesuai kebutuhan
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.centerLeft, // Atur posisi gambar
               child: Padding(
-                padding: const EdgeInsets.only(left: 100.0),
+                padding: const EdgeInsets.only(
+                    left: 115.0), // Geser sebelah kiri sejauh 30 pixel
                 child: Image.asset(
                   'assets/image1.png',
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  height: double.infinity,
+                  fit: BoxFit.contain, // Memastikan gambar menyesuaikan ukuran
+                  width: double.infinity, // Lebar gambar mengisi seluruh layar
+                  height:
+                      double.infinity, // Tinggi gambar mengisi seluruh layar
+                  // Ganti dengan path logo Anda
                 ),
               ),
             ),
           ),
-          SizedBox(height: 20.0),
-          ElevatedButton(
-            onPressed: toggleSensors,
-            child: Text('Tampilkan Monitoring Sensors'),
-          ),
-          SizedBox(height: 10.0),
-          ElevatedButton(
-            onPressed: toggleControl,
-            child: Text('Tampilkan Control Buttons'),
-          ),
-          SizedBox(height: 10.0),
-          ElevatedButton(
-            onPressed: toggleMonitor,
-            child: Text('Tampilkan Monitoring Laporan'),
-          ),
-          SizedBox(height: 20.0),
-          if (showSensors)
-            Container(
-              margin: EdgeInsets.all(20.0),
-              padding: EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Text(
-                'Monitoring Suhu, Kelembapan, dan Cahaya',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20.0,
-                ),
-              ),
-            ),
-          if (showControl)
-            Container(
-              margin: EdgeInsets.all(20.0),
-              padding: EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Text(
-                'Control Buttons (Otomatis/Manual)',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20.0,
-                ),
-              ),
-            ),
-          if (showMonitor)
-            Container(
-              margin: EdgeInsets.all(20.0),
-              padding: EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Text(
-                'Monitoring Laporan',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20.0,
-                ),
-              ),
-            ),
+          // Tambahkan elemen atau widget lain di sini
         ],
       ),
+
       bottomNavigationBar: BottomAppBar(
-        color: Color.fromARGB(255, 48, 184, 53),
+        color: Color.fromARGB(255, 48, 184, 53), // Warna latar belakang App Bar
         child: Container(
-          height: 50.0,
+          height: 50.0, // Tinggi App Bar
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
               IconButton(
                 icon: Icon(Icons.home),
-                onPressed: () {},
+                onPressed: () {
+                  // Tambahkan logika untuk tombol Home di sini
+                },
                 color: Colors.white,
               ),
               IconButton(
                 icon: Icon(Icons.settings),
-                onPressed: () {},
+                onPressed: () {
+                  // Tambahkan logika untuk tombol Settings di sini
+                },
                 color: Colors.white,
               ),
               IconButton(
                 icon: Icon(Icons.monitor),
-                onPressed: () {},
+                onPressed: () {
+                  // Tambahkan logika untuk tombol Settings di sini
+                },
                 color: Colors.white,
               ),
             ],
