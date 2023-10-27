@@ -53,9 +53,12 @@ class _MenuScreenState extends State<MenuScreen> {
                     fit: BoxFit.contain,
                     width: 100,
                   ),
-                  SizedBox(height: 10),
+                  SizedBox(
+                    height: 50,
+                    width: 100,
+                  ),
                   Text(
-                    'Deskripsi Logo',
+                    'Farm Smart Mobile',
                     style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ],
