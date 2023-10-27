@@ -13,67 +13,141 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
+  @override
+  _MenuScreenState createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  bool isLightOn = false;
+
+  void toggleLight() {
+    setState(() {
+      isLightOn = !isLightOn;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Latar belakang seluruh halaman
+      backgroundColor: Colors.white,
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          SizedBox(
-            width: 285, // Sesuaikan ukuran sesuai kebutuhan
-            height: 65, // Sesuaikan ukuran sesuai kebutuhan
-            child: Align(
-              alignment: Alignment.centerLeft, // Atur posisi gambar
-              child: Padding(
-                padding: const EdgeInsets.only(
-                    left: 115.0), // Geser sebelah kiri sejauh 30 pixel
-                child: Image.asset(
-                  'assets/image1.png',
-                  fit: BoxFit.contain, // Memastikan gambar menyesuaikan ukuran
-                  width: double.infinity, // Lebar gambar mengisi seluruh layar
-                  height:
-                      double.infinity, // Tinggi gambar mengisi seluruh layar
-                  // Ganti dengan path logo Anda
+          Center(
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 20), // Padding lebih panjang kiri dan kanan
+              decoration: BoxDecoration(
+                color: Color(0xFF4CAF50),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
+              ),
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/image1.png',
+                    fit: BoxFit.contain,
+                    width: 100,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Deskripsi Logo',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                ],
               ),
             ),
           ),
-          // Tambahkan elemen atau widget lain di sini
-        ],
-      ),
-
-      bottomNavigationBar: BottomAppBar(
-        color: Color.fromARGB(255, 48, 184, 53), // Warna latar belakang App Bar
-        child: Container(
-          height: 50.0, // Tinggi App Bar
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.home),
-                onPressed: () {
-                  // Tambahkan logika untuk tombol Home di sini
-                },
-                color: Colors.white,
+          SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildSensorContainer(
+                Icons.thermostat_outlined,
+                'Suhu',
+                '28°C', // Tambahkan monitoring derajat di sini
               ),
-              IconButton(
-                icon: Icon(Icons.settings),
-                onPressed: () {
-                  // Tambahkan logika untuk tombol Settings di sini
-                },
-                color: Colors.white,
-              ),
-              IconButton(
-                icon: Icon(Icons.monitor),
-                onPressed: () {
-                  // Tambahkan logika untuk tombol Settings di sini
-                },
-                color: Colors.white,
+              _buildSensorContainer(
+                Icons.opacity,
+                'Kelembapan',
+                '70%', // Tambahkan monitoring derajat di sini
               ),
             ],
           ),
-        ),
+          SizedBox(height: 30),
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 30),
+            child: ElevatedButton(
+              onPressed: toggleLight,
+              style: ElevatedButton.styleFrom(
+                primary: Color(0xFF4CAF50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: EdgeInsets.all(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isLightOn ? Icons.lightbulb : Icons.lightbulb_outline,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    isLightOn ? 'Matikan Lampu' : 'Nyalakan Lampu',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSensorContainer(IconData icon, String label, String value) {
+    return Container(
+      width: 150,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 50,
+            color: Color(0xFF4CAF50),
+          ),
+          SizedBox(height: 10),
+          Text(
+            label,
+            style: TextStyle(fontSize: 18),
+          ),
+          SizedBox(height: 5),
+          Text(
+            value,
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
