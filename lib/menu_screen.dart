@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mqtt_client/mqtt_client.dart' as mqtt;
-import 'package:mqtt_client/mqtt_server_client.dart' as mqtt;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -15,73 +17,109 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class SuhuDisplay extends StatefulWidget {
+  const SuhuDisplay({Key? key, required this.title}) : super(key: key);
+
+  final String title;
+
+  @override
+  State<SuhuDisplay> createState() => _SuhuDisplayState();
+}
+
+class _SuhuDisplayState extends State<SuhuDisplay> {
+  late DatabaseReference _dbref;
+  String databasejson = '';
+  var newAge;
+
+  @override
+  void initState() {
+    super.initState();
+    _dbref = FirebaseDatabase.instance.ref();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            buildText('Age is $databasejson'),
+            buildText('New Age is: $newAge'),
+            StreamBuilder(
+              stream: _dbref.onValue,
+              builder: (context, AsyncSnapshot snap) {
+                if (snap.hasData &&
+                    !snap.hasError &&
+                    snap.data.snapshot.value != null) {
+                  Map data = snap.data.snapshot.value;
+                  List item = [];
+                  data.forEach(
+                      (index, data) => item.add({"key": index, ...data}));
+                  return Expanded(
+                    child: ListView.builder(
+                      itemCount: item.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text("Customer: ${item[index]['key']}"),
+                          subtitle:
+                              Text('Age: ${item[index]['age'].toString()}'),
+                          isThreeLine: true,
+                        );
+                      },
+                    ),
+                  );
+                } else {
+                  return const Center(child: Text("No data"));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Text buildText(String s) {
+    return Text(
+      s,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  void ageChange() {
+    _dbref
+        .child('customer1')
+        .child('age')
+        .onValue
+        .listen((DatabaseEvent event) {
+      Object? data = event.snapshot.value;
+      print('weight data: $data');
+      setState(() {
+        newAge = data;
+      });
+    });
+  }
+}
+
 class MenuScreen extends StatefulWidget {
   @override
   _MenuScreenState createState() => _MenuScreenState();
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-  late mqtt.MqttServerClient client;
   bool isLightOn = false;
 
   void toggleLight() {
     setState(() {
       isLightOn = !isLightOn;
     });
-  }
-
-  void connect() async {
-    client = mqtt.MqttServerClient(
-        '192.168.187.37', '1883'); // Ganti dengan alamat broker MQTT Anda
-
-    client.port = 1883; // Port default MQTT
-
-    client.logging(on: true); // Aktifkan logging untuk debug
-
-    try {
-      await client.connect('liztric',
-          '123'); // Ganti dengan username dan password broker MQTT Anda
-    } catch (e) {
-      print('Exception: $e');
-      client.disconnect();
-    }
-
-    if (client.connectionStatus?.state == mqtt.MqttConnectionState.connected) {
-      print('Connected to broker');
-      client.subscribe('android_suhu', mqtt.MqttQos.atMostOnce);
-      client.subscribe('android_kelembapan', mqtt.MqttQos.atMostOnce);
-
-      client.updates?.listen((List<mqtt.MqttReceivedMessage> c) {
-        final mqtt.MqttPublishMessage message = c[0].payload;
-        final String payload = mqtt.MqttPublishPayload.bytesToStringAsString(
-            message.payload.message);
-
-        if (c[0].topic == 'suhu_topic') {
-          print('Suhu: $payload');
-          // Tambahkan logika untuk menangani data suhu di sini
-        } else if (c[0].topic == 'kelembapan_topic') {
-          print('Kelembapan: $payload');
-          // Tambahkan logika untuk menangani data kelembapan di sini
-        }
-      });
-    } else {
-      print('Connection failed');
-      client.disconnect();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    connect();
-  }
-
-  @override
-  void dispose() {
-    if (client != null) {
-      client.disconnect();
-    }
-    super.dispose();
   }
 
   Widget _buildSensorContainer(IconData icon, String label, String value) {
@@ -147,7 +185,7 @@ class _MenuScreenState extends State<MenuScreen> {
               _buildSensorContainer(
                 Icons.thermostat_outlined,
                 'Suhu',
-                '28°C',
+                '9°C',
               ),
               _buildSensorContainer(
                 Icons.opacity,
