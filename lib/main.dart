@@ -3,8 +3,12 @@ import 'splash_screen.dart';
 import 'login_screen.dart'; // Import file login_screen.dart
 import 'menu_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:myapp3/firebase_options.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(MyApp());
 }
 
