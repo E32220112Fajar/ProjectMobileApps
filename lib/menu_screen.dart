@@ -25,6 +25,7 @@ class _MenuScreenState extends State<MenuScreen> {
       FirebaseDatabase().reference().child('farmsmart').child('Kelembapan');
 
   String _lembapValue = "";
+
   late mqtt.MqttServerClient client;
   bool isLightOn = false;
 
@@ -37,7 +38,6 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    // Tidak perlu memanggil fetchData() di initState, karena sudah digunakan dalam FutureBuilder
   }
 
   Future<String> fetchData() async {
@@ -46,9 +46,9 @@ class _MenuScreenState extends State<MenuScreen> {
       if (eventlembap.snapshot.value != null) {
         return eventlembap.snapshot.value.toString();
       }
-      return ""; // Jika data null, return string kosong
+      return "";
     } catch (e) {
-      return ""; // Tangani error jika terjadi
+      return "";
     }
   }
 
@@ -127,7 +127,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       _buildSensorContainer(
                         Icons.thermostat_outlined,
                         'Suhu',
-                        '28°C',
+                        '${snapshot.data}',
                       ),
                       _buildSensorContainer(
                         Icons.opacity,
