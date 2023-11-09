@@ -16,7 +16,7 @@ class LoginScreen extends StatelessWidget {
     String username = usernameController.text;
     String password = passwordController.text;
 
-    if (username == 'admin' && password == 'admin') {
+    if (username == 'admin' && password == '123') {
       print('Login berhasil');
       Navigator.pushNamed(context, '/menu');
     } else {
