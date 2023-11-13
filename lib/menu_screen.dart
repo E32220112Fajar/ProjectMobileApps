@@ -22,7 +22,7 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   final DatabaseReference _databaseReference =
-      FirebaseDatabase().reference().child('farmsmart').child('Kelembapan');
+      FirebaseDatabase().reference().child('farmsmart').child('kelembapan');
 
   String _lembapValue = "";
 

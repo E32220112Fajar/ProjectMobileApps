@@ -49,6 +49,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '878649844417',
     projectId: 'projectmobile-f2d0f',
     authDomain: 'projectmobile-f2d0f.firebaseapp.com',
+    databaseURL: 'https://projectmobile-f2d0f-default-rtdb.firebaseio.com',
     storageBucket: 'projectmobile-f2d0f.appspot.com',
     measurementId: 'G-TW7H13ZHFW',
   );
@@ -58,6 +59,7 @@ class DefaultFirebaseOptions {
     appId: '1:878649844417:android:24aebb25bf8dfbcd306a40',
     messagingSenderId: '878649844417',
     projectId: 'projectmobile-f2d0f',
+    databaseURL: 'https://projectmobile-f2d0f-default-rtdb.firebaseio.com',
     storageBucket: 'projectmobile-f2d0f.appspot.com',
   );
 
@@ -66,6 +68,7 @@ class DefaultFirebaseOptions {
     appId: '1:878649844417:ios:ec75b74e483f2f3f306a40',
     messagingSenderId: '878649844417',
     projectId: 'projectmobile-f2d0f',
+    databaseURL: 'https://projectmobile-f2d0f-default-rtdb.firebaseio.com',
     storageBucket: 'projectmobile-f2d0f.appspot.com',
     iosBundleId: 'com.example.myapp3',
   );
@@ -75,6 +78,7 @@ class DefaultFirebaseOptions {
     appId: '1:878649844417:ios:06efe13e36dfc6e3306a40',
     messagingSenderId: '878649844417',
     projectId: 'projectmobile-f2d0f',
+    databaseURL: 'https://projectmobile-f2d0f-default-rtdb.firebaseio.com',
     storageBucket: 'projectmobile-f2d0f.appspot.com',
     iosBundleId: 'com.example.myapp3.RunnerTests',
   );
