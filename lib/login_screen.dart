@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'registrasi_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
@@ -12,33 +13,58 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  void _handleLogin(BuildContext context) {
+  Future<bool> _authenticateUser(String username, String password) async {
+    try {
+      QuerySnapshot query = await FirebaseFirestore.instance
+          .collection('register')
+          .where('username', isEqualTo: username)
+          .where('password', isEqualTo: password)
+          .get();
+
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print("Error authenticating user: $e");
+      return false;
+    }
+  }
+
+  void _handleLogin(BuildContext context) async {
     String username = usernameController.text;
     String password = passwordController.text;
 
-    if (username == 'admin' && password == '123') {
+    bool isAuthenticated = await _authenticateUser(username, password);
+
+    if (isAuthenticated) {
       print('Login berhasil');
       Navigator.pushNamed(context, '/menu');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error_outline_outlined,
-                color: Colors.white,
-              ),
-              SizedBox(width: 8.0),
-              Text(
-                'Username atau password salah. Silahkan coba lagi',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
+          content: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_outlined,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 8.0),
+                Expanded(
+                  child: Text(
+                    'Username atau password salah. Silahkan coba lagi',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 3),
           elevation: 6.0,
-          behavior: SnackBarBehavior.fixed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
         ),
       );
     }
@@ -79,13 +105,12 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(height: 24.0),
                       TextFormField(
                         controller: usernameController,
-                        style:
-                            TextStyle(color: Colors.black87), // Ubah warna teks
+                        style: TextStyle(color: Colors.black87),
                         decoration: InputDecoration(
                           labelText: 'Username',
                           prefixIcon: Icon(
                             Icons.person,
-                            color: Color(0xFF4CAF50), // Ubah warna ikon
+                            color: Color(0xFF4CAF50),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -96,13 +121,12 @@ class LoginScreen extends StatelessWidget {
                       TextFormField(
                         controller: passwordController,
                         obscureText: true,
-                        style:
-                            TextStyle(color: Colors.black87), // Ubah warna teks
+                        style: TextStyle(color: Colors.black87),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: Icon(
                             Icons.lock,
-                            color: Color(0xFF4CAF50), // Ubah warna ikon
+                            color: Color(0xFF4CAF50),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -112,10 +136,10 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(height: 24.0),
                       ElevatedButton(
                         onPressed: () {
-                          _handleLogin(context); // Panggil fungsi _handleLogin
+                          _handleLogin(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          primary: Color(0xFF4CAF50), // Ubah warna tombol
+                          primary: Color(0xFF4CAF50),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.0),
                           ),
@@ -126,34 +150,23 @@ class LoginScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16.0,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white, // Ubah warna teks
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                      //SizedBox(height: 12.0),
-                      //TextButton(
-                      //onPressed: () {
-                      // Implementasi logika lupa sandi di sini
-                      //},
-                      //child: Text(
-                      //'Lupa Sandi?',
-                      //style: TextStyle(
-                      //color: Color(0xFF4CAF50)), // Ubah warna teks
-                      //),
-                      //),
-                      //SizedBox(height: 12.0),
-                      //TextButton(
-                      //onPressed: () {
-                      //_navigateToRegister(context);
-                      //},
-                      //child: Text(
-                      //'Daftar Sekarang',
-                      //style: TextStyle(
-                      //color: Color(0xFF4CAF50),
-                      //fontWeight: FontWeight.bold,
-                      //),
-                      //),
-                      //),
+                      SizedBox(height: 12.0),
+                      TextButton(
+                        onPressed: () {
+                          _navigateToRegister(context);
+                        },
+                        child: Text(
+                          'Daftar Sekarang',
+                          style: TextStyle(
+                            color: Color(0xFF4CAF50),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

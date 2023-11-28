@@ -37,7 +37,11 @@ dependencies:
   cupertino_icons: ^1.0.2
   firebase_core: ^2.21.0
   firebase_database: ^10.3.3
+  firebase_auth: ^4.15.0
+  cloud_firestore: ^4.13.3
 
+ 
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -55,7 +59,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter_icon:
   android: "launcher_icon"
-  image_path: assets\icon\play_store_512.png
+  image_path: assets/icon/play_store_512.png
   min_android_sdk: 21
   
 flutter:
@@ -74,6 +78,14 @@ flutter:
       - assets/bg_4.jpg
       - assets/bg_5.jpg
       - assets/bg_6.jpg
+      - assets/istockphoto-1172727463-612x612.jpg
+      - assets/istockphoto-1279683132-170667a.jpg
+      - assets/play_store_512.png
+      - android/app/src/main/res/mipmap-mdpi/icon.png
+      - android/app/src/main/res/mipmap-hdpi/icon.png
+      - android/app/src/main/res/mipmap-xhdpi/icon.png
+      - android/app/src/main/res/mipmap-xxhdpi/icon.png
+      - android/app/src/main/res/mipmap-xxxhdpi/icon.png
 
   #   - images/a_dot_ham.jpeg
 

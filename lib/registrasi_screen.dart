@@ -1,16 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import firestore
 
 class RegisterScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void _handleRegister(BuildContext context) {
+  // Inisialisasi Firestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _handleRegister(BuildContext context) async {
     String email = emailController.text;
     String username = usernameController.text;
     String password = passwordController.text;
 
-    print('Email: $email, Username: $username, Password: $password');
+    try {
+      // Simpan data ke Firestore
+      await _firestore.collection('register').add({
+        'email': email,
+        'username': username,
+        'password': password,
+      });
+
+      // Tampilkan pesan sukses
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registrasi berhasil!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+          elevation: 6.0,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
+      );
+
+      // Kembali ke halaman login
+      Navigator.pop(context);
+    } catch (error) {
+      print('Error: $error');
+      // Tampilkan pesan kesalahan jika terjadi masalah
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan. Silahkan coba lagi.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+          elevation: 6.0,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
+      );
+    }
   }
 
   @override
