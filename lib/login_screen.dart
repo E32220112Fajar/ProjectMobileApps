@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
-import 'registrasi_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'registrasi_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  bool _isPasswordVisible = false;
 
   void _navigateToRegister(BuildContext context) {
     Navigator.push(
@@ -68,6 +76,11 @@ class LoginScreen extends StatelessWidget {
         ),
       );
     }
+
+    // Setelah proses login selesai, reset _isPasswordVisible ke false
+    setState(() {
+      _isPasswordVisible = false;
+    });
   }
 
   @override
@@ -120,13 +133,27 @@ class LoginScreen extends StatelessWidget {
                       SizedBox(height: 12.0),
                       TextFormField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: !_isPasswordVisible,
                         style: TextStyle(color: Colors.black87),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: Icon(
                             Icons.lock,
                             color: Color(0xFF4CAF50),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Color(0xFF4CAF50),
+                            ),
+                            onPressed: () {
+                              // Toggle the password visibility
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -167,6 +194,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      SizedBox(height: 12.0),
                     ],
                   ),
                 ),

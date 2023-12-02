@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 
 void main() {
@@ -18,8 +19,7 @@ class MyApp extends StatelessWidget {
 }
 
 class TemperatureMonitor extends StatelessWidget {
-  final dynamic
-      value; // Menggunakan tipe data dynamic untuk menerima nilai numerik atau string
+  final dynamic value;
   final IconData icon;
   final String label;
 
@@ -31,10 +31,9 @@ class TemperatureMonitor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color boxColor = Colors.green; // Warna default untuk kelembapan
+    Color boxColor = Colors.green;
 
     if (label == 'Suhu') {
-      // Periksa apakah value adalah double
       if (value is double) {
         boxColor = _getBoxColor(value);
       }
@@ -80,11 +79,11 @@ class TemperatureMonitor extends StatelessWidget {
 
   Color _getBoxColor(double temperature) {
     if (temperature >= 30.0) {
-      return Colors.red; // Warna merah untuk suhu tinggi
+      return Colors.red;
     } else if (temperature >= 15.0 && temperature < 30.0) {
-      return Colors.green; // Warna hijau untuk suhu netral
+      return Colors.green;
     } else {
-      return Colors.blue; // Warna biru untuk suhu dingin
+      return Colors.blue;
     }
   }
 }
@@ -148,6 +147,20 @@ class _MenuScreenState extends State<MenuScreen> {
       if (event.snapshot.value != null) {
         _suhuValue = event.snapshot.value.toString();
         _suhuStreamController.add(_suhuValue);
+
+        double suhu = double.parse(_suhuValue);
+
+        if (suhu > 30.0) {
+          _kipasReference.set("ON");
+        } else {
+          _kipasReference.set("OFF");
+        }
+
+        if (suhu < 15.0) {
+          _lampuReference.set("ON");
+        } else {
+          _lampuReference.set("OFF");
+        }
       }
     });
   }
@@ -176,7 +189,7 @@ class _MenuScreenState extends State<MenuScreen> {
       case 'Kipas':
         return _getSwitchStatus(device) == 'ON' ? 1.0 : 0.0;
       default:
-        return 0.0; // Nilai default jika perangkat tidak dikenali
+        return 0.0;
     }
   }
 
@@ -187,7 +200,7 @@ class _MenuScreenState extends State<MenuScreen> {
       case 'Kipas':
         return _kipasValue;
       default:
-        return 'OFF'; // Nilai default jika perangkat tidak dikenali
+        return 'OFF';
     }
   }
 
@@ -225,230 +238,232 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color.fromARGB(255, 33, 150, 243), Colors.green],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+        body: Stack(children: [
+      Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color.fromARGB(255, 33, 150, 243), Colors.green],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+      ),
+      Positioned(
+        top: 0,
+        right: 0,
+        left: 0,
+        child: Container(
+          height: 150,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(150),
+              bottomRight: Radius.circular(150),
             ),
           ),
-          Positioned(
-            top: 0,
-            right: 0,
-            left: 0,
-            child: Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(150),
-                  bottomRight: Radius.circular(150),
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 10),
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.active) {
+                    User? user = snapshot.data;
+                    if (user != null) {
+                      return Text(
+                        'Selamat datang, ${user.displayName}!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      );
+                    }
+                  }
+                  return Container();
+                },
               ),
-            ),
+            ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color.fromARGB(255, 33, 150, 243), Colors.green],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: StreamBuilder<String>(
-              stream: _kelembapanStreamController.stream,
-              builder: (BuildContext context,
-                  AsyncSnapshot<String> kelembapanSnapshot) {
-                if (kelembapanSnapshot.connectionState ==
-                    ConnectionState.waiting) {
+        ),
+      ),
+      StreamBuilder<String>(
+        stream: _kelembapanStreamController.stream,
+        builder:
+            (BuildContext context, AsyncSnapshot<String> kelembapanSnapshot) {
+          if (kelembapanSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (kelembapanSnapshot.hasError) {
+            return Center(
+              child: Text('Error: ${kelembapanSnapshot.error}'),
+            );
+          } else {
+            return StreamBuilder<String>(
+              stream: _suhuStreamController.stream,
+              builder:
+                  (BuildContext context, AsyncSnapshot<String> suhuSnapshot) {
+                if (suhuSnapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(),
                   );
-                } else if (kelembapanSnapshot.hasError) {
+                } else if (suhuSnapshot.hasError) {
                   return Center(
-                    child: Text('Error: ${kelembapanSnapshot.error}'),
+                    child: Text('Error: ${suhuSnapshot.error}'),
                   );
                 } else {
                   return StreamBuilder<String>(
-                    stream: _suhuStreamController.stream,
+                    stream: _lampuStreamController.stream,
                     builder: (BuildContext context,
-                        AsyncSnapshot<String> suhuSnapshot) {
-                      if (suhuSnapshot.connectionState ==
+                        AsyncSnapshot<String> lampuSnapshot) {
+                      if (lampuSnapshot.connectionState ==
                           ConnectionState.waiting) {
                         return Center(
                           child: CircularProgressIndicator(),
                         );
-                      } else if (suhuSnapshot.hasError) {
+                      } else if (lampuSnapshot.hasError) {
                         return Center(
-                          child: Text('Error: ${suhuSnapshot.error}'),
+                          child: Text('Error: ${lampuSnapshot.error}'),
                         );
                       } else {
                         return StreamBuilder<String>(
-                          stream: _lampuStreamController.stream,
+                          stream: _kipasStreamController.stream,
                           builder: (BuildContext context,
-                              AsyncSnapshot<String> lampuSnapshot) {
-                            if (lampuSnapshot.connectionState ==
+                              AsyncSnapshot<String> kipasSnapshot) {
+                            if (kipasSnapshot.connectionState ==
                                 ConnectionState.waiting) {
                               return Center(
                                 child: CircularProgressIndicator(),
                               );
-                            } else if (lampuSnapshot.hasError) {
+                            } else if (kipasSnapshot.hasError) {
                               return Center(
-                                child: Text('Error: ${lampuSnapshot.error}'),
+                                child: Text('Error: ${kipasSnapshot.error}'),
                               );
                             } else {
-                              return StreamBuilder<String>(
-                                stream: _kipasStreamController.stream,
-                                builder: (BuildContext context,
-                                    AsyncSnapshot<String> kipasSnapshot) {
-                                  if (kipasSnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  } else if (kipasSnapshot.hasError) {
-                                    return Center(
-                                      child:
-                                          Text('Error: ${kipasSnapshot.error}'),
-                                    );
-                                  } else {
-                                    return ListView(
-                                      children: <Widget>[
-                                        Align(
-                                          alignment: Alignment.topCenter,
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 40, vertical: 10),
-                                            child: Image.asset(
-                                              'assets/image1.png',
-                                              fit: BoxFit.contain,
-                                              width: 180,
-                                            ),
+                              return ListView(
+                                children: <Widget>[
+                                  Align(
+                                    alignment: Alignment.topCenter,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 40, vertical: 10),
+                                      child: Image.asset(
+                                        'assets/image1.png',
+                                        fit: BoxFit.contain,
+                                        width: 180,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 30),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          TemperatureMonitor(
+                                            icon: Icons.thermostat_outlined,
+                                            label: 'Suhu',
+                                            value: double.parse(
+                                                suhuSnapshot.data ?? '0'),
                                           ),
+                                          TemperatureMonitor(
+                                            icon: Icons.opacity,
+                                            label: 'Kelembapan',
+                                            value: double.parse(
+                                                kelembapanSnapshot.data ?? '0'),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          TemperatureMonitor(
+                                            icon: Icons.lightbulb_outline,
+                                            label: 'Lampu',
+                                            value: _lampuValue,
+                                          ),
+                                          TemperatureMonitor(
+                                            icon: Icons.air,
+                                            label: 'Kipas',
+                                            value: _kipasValue,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  GestureDetector(
+                                    onTap: pressedButtonLED,
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                      height: 180,
+                                      width: 100,
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromARGB(
+                                            255, 255, 255, 255),
+                                        border: Border.all(
+                                          color: isButtonPressedLED
+                                              ? Colors.grey.shade100
+                                              : Colors.grey.shade300,
                                         ),
-                                        SizedBox(height: 30),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            Column(
-                                              children: [
-                                                TemperatureMonitor(
-                                                  icon:
-                                                      Icons.thermostat_outlined,
-                                                  label: 'Suhu',
-                                                  value: double.parse(
-                                                      suhuSnapshot.data ?? '0'),
-                                                ),
-                                                TemperatureMonitor(
-                                                  icon: Icons.opacity,
-                                                  label: 'Kelembapan',
-                                                  value: double.parse(
-                                                      kelembapanSnapshot.data ??
-                                                          '0'),
-                                                ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: isButtonPressedLED
+                                            ? [
+                                                const BoxShadow(
+                                                    color: Color.fromARGB(
+                                                        255, 255, 252, 48),
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 1,
+                                                    spreadRadius: 1)
+                                              ]
+                                            : [
+                                                const BoxShadow(
+                                                    color: Color.fromARGB(
+                                                        255, 68, 68, 68),
+                                                    offset: Offset(3, 3),
+                                                    blurRadius: 5,
+                                                    spreadRadius: 1)
                                               ],
-                                            ),
-                                            Column(
-                                              children: [
-                                                TemperatureMonitor(
-                                                  icon: Icons.lightbulb_outline,
-                                                  label: 'Lampu',
-                                                  value: _lampuValue,
-                                                ),
-                                                TemperatureMonitor(
-                                                  icon: Icons.air,
-                                                  label: 'Kipas',
-                                                  value: _kipasValue,
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        GestureDetector(
-                                          onTap: pressedButtonLED,
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                                milliseconds: 200),
-                                            height: 180,
-                                            width: 100,
-                                            decoration: BoxDecoration(
-                                              color: const Color.fromARGB(
-                                                  255, 255, 255, 255),
-                                              border: Border.all(
-                                                color: isButtonPressedLED
-                                                    ? Colors.grey.shade100
-                                                    : Colors.grey.shade300,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              boxShadow: isButtonPressedLED
-                                                  ? [
-                                                      const BoxShadow(
-                                                          color: Color.fromARGB(
-                                                              255,
-                                                              255,
-                                                              252,
-                                                              48),
-                                                          offset: Offset(1, 1),
-                                                          blurRadius: 1,
-                                                          spreadRadius: 1)
-                                                    ]
-                                                  : [
-                                                      const BoxShadow(
-                                                          color: Color.fromARGB(
-                                                              255, 68, 68, 68),
-                                                          offset: Offset(3, 3),
-                                                          blurRadius: 5,
-                                                          spreadRadius: 1)
-                                                    ],
-                                            ),
-                                            child: Image.asset(
-                                              isButtonPressedLED
-                                                  ? "assets/istockphoto-1279683132-170667a.jpg"
-                                                  : "assets/istockphoto-1172727463-612x612.jpg",
-                                              height: 100,
-                                              width: 100,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: 20),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            logOut();
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            elevation: 10,
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.4,
-                                              vertical: 2,
-                                            ),
-                                            backgroundColor:
-                                                const Color.fromARGB(
-                                                    255, 255, 255, 255),
-                                            shadowColor: const Color.fromARGB(
-                                                255, 142, 142, 142),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.logout_sharp,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }
-                                },
+                                      ),
+                                      child: Image.asset(
+                                        isButtonPressedLED
+                                            ? "assets/istockphoto-1279683132-170667a.jpg"
+                                            : "assets/istockphoto-1172727463-612x612.jpg",
+                                        height: 100,
+                                        width: 100,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      logOut();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      elevation: 10,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal:
+                                            MediaQuery.of(context).size.width *
+                                                0.4,
+                                        vertical: 2,
+                                      ),
+                                      backgroundColor: const Color.fromARGB(
+                                          255, 255, 255, 255),
+                                      shadowColor: const Color.fromARGB(
+                                          255, 142, 142, 142),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.logout_sharp,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ],
                               );
                             }
                           },
@@ -458,10 +473,10 @@ class _MenuScreenState extends State<MenuScreen> {
                   );
                 }
               },
-            ),
-          ),
-        ],
+            );
+          }
+        },
       ),
-    );
+    ]));
   }
 }
