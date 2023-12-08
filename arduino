@@ -1,1 +1,334 @@
+#include <ESP8266WiFi.h>
+#include <FirebaseESP8266.h>
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+#include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <WiFiManager.h>
 
+// Konfigurasi Wi-Fi
+char ssid[32] = ""; // Untuk menyimpan SSID WiFi
+char password[32] = ""; // Untuk menyimpan password WiFi
+
+char apPassword[32] = "11223344";
+// Konfigurasi Firebase
+const char* firebaseHost = "https://projectmobile-f2d0f-default-rtdb.firebaseio.com/";
+const char* firebaseAuth = "zA6nvvhkvQzYRGtAQ0R4UNVzAUZn15FNWi6XGVyo";
+
+// Konfigurasi LCD I2C
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Konfigurasi Sensor DHT
+#define DHTPIN D8
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+
+ESP8266WebServer server(80);
+
+// Konfigurasi pin-pins untuk kontrol RGB LED, lampu, dan tombol fisik
+const int redPin = D5;
+const int greenPin = D6;
+const int bluePin = D7;
+const int lampPin = D3;
+const int buttonPin = D4;
+const int matahari = D0;
+
+// Status awal lampu dan pemanas (mati)
+bool lampStatus = false;
+bool mataharist = false;
+
+// Threshold suhu untuk pengaturan RGB
+int startThreshold = 0;
+int finishThreshold = 0;
+
+void updateSettings() {
+  // Ambil nilai default startThreshold, finishThreshold dari Firebase
+  if (Firebase.getString(fbdo, "/settings/rgb")) {
+    String thresholdSetting = fbdo.stringData();
+    Serial.print("Pengaturan Ambang dari Firebase: ");
+    Serial.println(thresholdSetting);
+
+    int commaIndex = thresholdSetting.indexOf(',');
+    String startValue = thresholdSetting.substring(0, commaIndex);
+    thresholdSetting.remove(0, commaIndex + 1);
+    int secondCommaIndex = thresholdSetting.indexOf(',');
+    String finishValue = thresholdSetting.substring(0, secondCommaIndex);
+
+    startThreshold = startValue.toInt();
+    finishThreshold = finishValue.toInt();
+  }
+}
+
+void handleSettingsUpdate() {
+  // Perbarui nilai default dari Firebase
+  updateSettings();
+  server.send(200, "text/plain", "Pengaturan diperbarui");
+}
+
+void handleRoot() {
+  // Tampilkan halaman web dengan suhu, kelembapan, status lampu, dan kontrol lampu
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
+  String html = "<html><head>";
+  html += "<style>";
+  html += "body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; text-align: center; }";
+  html += "h1 { color: #333; }";
+  html += "p { margin-bottom: 10px; }";
+  html += "form { margin-top: 20px; }";
+  html += "input[type=text] { width: 30%; padding: 8px; margin: 5px 0 22px 0; display: inline-block; border: 1px solid #ccc; box-sizing: border-box; }";
+  html += "input[type=submit] { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }";
+  html += "a { text-decoration: none; margin: 25px; padding: 10px; color: white;}";
+  html += ".button-on { background-color: #4CAF50; }";
+  html += ".button-off { background-color: #FF0000; }";
+  html += ".button-save { background-color: #0000FF; }";
+  html += "</style>";
+  html += "</head><body>";
+  html += "<h1>FarmSmart Dashboard</h1>";
+  html += "<p>Suhu: " + String(temperature) + "&deg;C</p>";
+  html += "<p>Kelembapan: " + String(humidity) + "%</p>";
+  html += "<p>Status Lampu: " + String(lampStatus ? "ON" : "OFF") + "</p>";
+
+  // Tambahkan bagian untuk pengaturan RGB
+  html += "<h2>Pengaturan RGB</h2>";
+  html += "<form action='/updateRGB' method='post'>";
+  html += "Batas suhu terendah : <input type='text' name='startThreshold' value='" + String(startThreshold) + "'><br>";
+  html += "Batas suhu tertinggi : <input type='text' name='finishThreshold' value='" + String(finishThreshold) + "'><br>";
+  html += "<input type='submit' class='button-save' value='Simpan'>";
+  html += "</form>";
+
+  html += "<h2>Kontrol Lampu</h2>";
+  html += "<p><a href='/lampu-on' class='button-on'>Hidupkan Lampu</a>";
+  html += "<a href='/lampu-off' class='button-off'>Matikan Lampu</a></p>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+
+
+void handleRGBUpdate() {
+  // Update nilai threshold RGB
+  String startValue = server.arg("startThreshold");
+  String finishValue = server.arg("finishThreshold");
+  startThreshold = startValue.toInt();
+  finishThreshold = finishValue.toInt();
+
+  // Simpan nilai di Firebase
+  Firebase.setString(fbdo, "/settings/rgb", startValue + "," + finishValue);
+
+  // Redirect kembali ke halaman utama
+  server.sendHeader("Location", "/");
+  server.send(302, "text/plain", "");
+}
+
+void handleLampuOn() {
+  // Hidupkan lampu
+  digitalWrite(lampPin, HIGH);
+  lampStatus = true;
+  Firebase.setString(fbdo, "/farmsmart/LED", "ON");
+  
+  // Redirect kembali ke halaman utama
+  server.sendHeader("Location", "/");
+  server.send(302, "text/plain", "");
+}
+
+void handleLampuOff() {
+  // Matikan lampu
+  digitalWrite(lampPin, LOW);
+  lampStatus = false;
+  Firebase.setString(fbdo, "/farmsmart/LED", "OFF");
+ 
+  // Redirect kembali ke halaman utama
+  server.sendHeader("Location", "/");
+  server.send(302, "text/plain", "");
+}
+
+void handleNotFound() {
+  // Handle jika halaman tidak ditemukan
+  String message = "Halaman salah\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+
+  server.send(404, "text/plain", message);
+}
+
+void setup() {
+  // Inisialisasi LCD
+  lcd.init();
+  lcd.backlight();
+
+  // Inisialisasi pin-pins
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(lampPin, OUTPUT);
+  pinMode(matahari, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+
+  // Inisialisasi Serial
+  Serial.begin(115200);
+
+  // Tampilkan pesan selamat datang di LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Welcome to our");
+  lcd.setCursor(0, 1);
+  lcd.print("Farmsmartproject");
+  delay(3000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Farmsmart-wifi");
+  lcd.setCursor(0, 1);
+  lcd.print("PW: 11223344");
+  delay(3000);
+  
+  // Buat objek WiFiManager
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("Farmsmart-wifi", apPassword);
+
+  // Coba untuk menghubungkan ke WiFi yang disimpan
+  if (!wifiManager.autoConnect("Farmsmart-wifi")) {
+    Serial.println("Gagal terkoneksi dan waktu habis!");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Wrong password");
+    lcd.setCursor(0, 1);
+    lcd.print("Please reconnect");
+    delay(3000);
+    lcd.clear();
+    // Reset jika gagal terkoneksi
+    ESP.reset();
+    delay(5000);
+  }
+
+
+
+  lcd.clear();
+  // Tampilkan IP di Serial
+  Serial.println();
+  Serial.print("IP for Website:");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+  lcd.setCursor(0, 0);
+  lcd.print("IP for Website:");
+  lcd.setCursor(0, 1);
+  lcd.print(WiFi.localIP());
+  delay(3000);
+  lcd.clear();
+
+  // Inisialisasi Firebase
+  config.database_url = firebaseHost;
+  config.signer.tokens.legacy_token = firebaseAuth;
+  Firebase.begin(&config, &auth);
+  dht.begin();
+
+  // Handle request untuk halaman web
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/updateRGB", HTTP_POST, handleRGBUpdate);
+  server.on("/lampu-on", HTTP_GET, handleLampuOn);
+  server.on("/lampu-off", HTTP_GET, handleLampuOff);
+  server.onNotFound(handleNotFound);
+  updateSettings();
+  // Mulai server
+  server.begin();
+}
+
+void loop() {
+  // Handle request dari klien
+  server.handleClient();
+
+  // Update nilai sensor dan Firebase
+  lcd.clear();
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println("Gagal membaca dari sensor DHT");
+    lcd.setCursor(0, 0);
+    lcd.print("Kesalahan DHT11");
+    delay(1000);
+    lcd.clear();
+    return;
+  }
+
+  Firebase.setFloat(fbdo, "/farmsmart/suhu", temperature);
+  Firebase.setFloat(fbdo, "/farmsmart/kelembapan", humidity);
+
+  lcd.setCursor(0, 0);
+  String suhuText = "Temp: " + String(temperature) + ((char)223) + "C";
+  lcd.print(suhuText);
+  lcd.setCursor(0, 1);
+  String tempText = "Hum : " + String(humidity) + "%";
+  lcd.print(tempText);
+
+  // Kontrol RGB LED berdasarkan suhu
+  if (temperature < startThreshold) {
+    digitalWrite(redPin, LOW);
+    digitalWrite(greenPin, LOW);
+    digitalWrite(bluePin, HIGH);
+    Firebase.setString(fbdo, "/farmsmart/kipas", "OFF");
+    Firebase.setString(fbdo, "/farmsmart/lampu", "ON");
+    digitalWrite(matahari, HIGH);
+    mataharist = true;
+  } else if (temperature >= startThreshold && temperature <= finishThreshold) {
+    digitalWrite(redPin, LOW);
+    digitalWrite(greenPin, HIGH);
+    digitalWrite(bluePin, LOW);
+    Firebase.setString(fbdo, "/farmsmart/kipas", "ON");
+    Firebase.setString(fbdo, "/farmsmart/lampu", "OFF");
+    digitalWrite(matahari, LOW);
+    mataharist = false;
+  } else {
+    digitalWrite(redPin, HIGH);
+    digitalWrite(greenPin, LOW);
+    digitalWrite(bluePin, LOW);
+    Firebase.setString(fbdo, "/farmsmart/kipas", "ON");
+    Firebase.setString(fbdo, "/farmsmart/lampu", "OFF");
+    digitalWrite(matahari, LOW);
+    mataharist = false;
+  }
+
+  // Update status lampu dari Firebase
+  if (Firebase.getString(fbdo, "/farmsmart/LED")) {
+    String lampuStatus = fbdo.stringData();
+    Serial.print("Status Lampu dari Firebase: ");
+    Serial.println(lampuStatus);
+
+    if (lampuStatus == "ON") {
+      digitalWrite(lampPin, HIGH);
+      lampStatus = true;
+    } else if (lampuStatus == "OFF") {
+      digitalWrite(lampPin, LOW);
+      lampStatus = false;
+    }
+  }
+
+  // Kontrol lampu dengan tombol fisik
+  int buttonState = digitalRead(buttonPin);
+  if (buttonState == LOW) {
+    if (!lampStatus) {
+      digitalWrite(lampPin, HIGH);
+      lampStatus = true;
+      Firebase.setString(fbdo, "/farmsmart/LED", "ON");
+    } else {
+      digitalWrite(lampPin, LOW);
+      lampStatus = false;
+      Firebase.setString(fbdo, "/farmsmart/LED", "OFF");
+    }
+    delay(500);
+  }
+
+  // Tunda selama 1 detik
+  delay(1000);
+}
